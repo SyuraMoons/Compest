@@ -13,6 +13,8 @@ import {
   Leaf,
   Zap,
   Award,
+  Eye,
+  X,
 } from "lucide-react";
 
 export default function MenuPage() {
@@ -21,6 +23,8 @@ export default function MenuPage() {
   const [favorites, setFavorites] = useState([]);
   const [cart, setCart] = useState([]);
   const [isVisible, setIsVisible] = useState({});
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -39,6 +43,12 @@ export default function MenuPage() {
     sections.forEach((section) => observer.observe(section));
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, []);
 
   const categories = [
@@ -199,6 +209,18 @@ export default function MenuPage() {
       }
       return [...prev, { ...meal, quantity: 1 }];
     });
+  };
+
+  const openMealModal = (meal) => {
+    setSelectedMeal(meal);
+    setIsModalOpen(true);
+    document.body.style.overflow = "hidden"; // Prevent background scrolling
+  };
+
+  const closeMealModal = () => {
+    setSelectedMeal(null);
+    setIsModalOpen(false);
+    document.body.style.overflow = "unset"; // Restore scrolling
   };
 
   return (
@@ -385,24 +407,33 @@ export default function MenuPage() {
                   </div>
 
                   {/* Price and Action */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-gray-900">
+                  <div className="flex items-center justify-between mt-4 flex-nowrap">
+                    <div className="flex items-center gap-2 flex-nowrap">
+                      <span className="text-2xl font-bold text-gray-900 whitespace-nowrap">
                         {meal.price}
                       </span>
                       {meal.originalPrice && (
-                        <span className="text-sm text-gray-500 line-through">
+                        <span className="text-sm text-gray-500 line-through whitespace-nowrap">
                           {meal.originalPrice}
                         </span>
                       )}
                     </div>
-                    <button
-                      onClick={() => addToCart(meal)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      Add to Cart
-                    </button>
+                    <div className="flex gap-2 flex-nowrap">
+                      <button
+                        onClick={() => openMealModal(meal)}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium transition-all duration-300 transform hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Details
+                      </button>
+                      <button
+                        onClick={() => addToCart(meal)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -460,6 +491,268 @@ export default function MenuPage() {
           </div>
         </div>
       </footer>
+
+      {/* Meal Detail Modal */}
+      {isModalOpen && selectedMeal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="relative">
+              <img
+                src={selectedMeal.image || "/placeholder.svg"}
+                alt={selectedMeal.name}
+                className="w-full h-64 object-cover rounded-t-2xl"
+              />
+              <button
+                onClick={closeMealModal}
+                className="absolute top-4 right-4 bg-white/90 backdrop-blur rounded-full p-2 hover:bg-white transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+              <div className="absolute bottom-4 left-4 flex gap-2">
+                {selectedMeal.originalPrice && (
+                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    Sale
+                  </span>
+                )}
+                {selectedMeal.tags.slice(0, 2).map((tag, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              <div className="grid lg:grid-cols-2 gap-8">
+                {/* Left Column */}
+                <div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                        {selectedMeal.name}
+                      </h2>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span>{selectedMeal.rating}</span>
+                          <span>({selectedMeal.reviews} reviews)</span>
+                        </div>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{selectedMeal.prepTime}</span>
+                        </div>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Zap className="w-4 h-4" />
+                          <span>{selectedMeal.calories}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleFavorite(selectedMeal.id)}
+                      className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                    >
+                      <Heart
+                        className={`w-6 h-6 ${
+                          favorites.includes(selectedMeal.id)
+                            ? "text-red-500 fill-current"
+                            : "text-gray-600"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <p className="text-gray-700 mb-6 leading-relaxed">
+                    {selectedMeal.description}
+                  </p>
+
+                  {/* Ingredients */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      Ingredients
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedMeal.ingredients.map((ingredient, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 text-gray-700"
+                        >
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span>{ingredient}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Nutrition Highlights */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      Nutrition Highlights
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMeal.nutritionHighlights.map(
+                        (highlight, index) => (
+                          <span
+                            key={index}
+                            className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium"
+                          >
+                            {highlight}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* All Tags */}
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">
+                      Meal Features
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMeal.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div>
+                  {/* Pricing */}
+                  <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+                    <div className="text-center mb-4">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <span className="text-3xl font-bold text-gray-900">
+                          {selectedMeal.price}
+                        </span>
+                        {selectedMeal.originalPrice && (
+                          <span className="text-lg text-gray-500 line-through">
+                            {selectedMeal.originalPrice}
+                          </span>
+                        )}
+                      </div>
+                      {selectedMeal.originalPrice && (
+                        <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                          Save{" "}
+                          {Math.round(
+                            ((Number.parseInt(
+                              selectedMeal.originalPrice.replace(/\D/g, "")
+                            ) -
+                              Number.parseInt(
+                                selectedMeal.price.replace(/\D/g, "")
+                              )) /
+                              Number.parseInt(
+                                selectedMeal.originalPrice.replace(/\D/g, "")
+                              )) *
+                              100
+                          )}
+                          %
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-3 mb-6">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Preparation Time:</span>
+                        <span className="font-medium">
+                          {selectedMeal.prepTime}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Calories:</span>
+                        <span className="font-medium">
+                          {selectedMeal.calories}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Category:</span>
+                        <span className="font-medium capitalize">
+                          {selectedMeal.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        addToCart(selectedMeal);
+                        closeMealModal();
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      Add to Cart
+                    </button>
+                  </div>
+
+                  {/* Customer Reviews Preview */}
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      Customer Reviews
+                    </h3>
+                    <div className="space-y-4">
+                      {[
+                        {
+                          name: "Sarah M.",
+                          rating: 5,
+                          comment:
+                            "Absolutely delicious and perfectly portioned!",
+                        },
+                        {
+                          name: "John D.",
+                          rating: 5,
+                          comment:
+                            "Fresh ingredients and amazing flavors. Highly recommend!",
+                        },
+                        {
+                          name: "Maria L.",
+                          rating: 4,
+                          comment: "Great meal, will definitely order again.",
+                        },
+                      ].map((review, index) => (
+                        <div
+                          key={index}
+                          className="border-b border-gray-200 pb-3 last:border-b-0"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex">
+                              {[...Array(review.rating)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className="w-4 h-4 text-yellow-400 fill-current"
+                                />
+                              ))}
+                            </div>
+                            <span className="font-medium text-sm">
+                              {review.name}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm">
+                            "{review.comment}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-3">
+                      View all {selectedMeal.reviews} reviews →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
