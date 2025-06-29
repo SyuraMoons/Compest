@@ -16,12 +16,200 @@ import {
   Clock,
   Phone,
   Mail,
+  CheckCircle,
+  AlertCircle,
+  Send,
 } from "lucide-react";
 
 export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState("standard");
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [isVisible, setIsVisible] = useState({});
+
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    fullName: "",
+    phoneNumber: "",
+    selectedPlan: "",
+    mealTypes: [],
+    deliveryDays: [],
+    allergies: "",
+  });
+  const [subscriptionErrors, setSubscriptionErrors] = useState({});
+  const [isSubscriptionSubmitting, setIsSubscriptionSubmitting] =
+    useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+
+  const handleSubscriptionInputChange = (e) => {
+    const { name, value } = e.target;
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when user starts typing
+    if (subscriptionErrors[name]) {
+      setSubscriptionErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const handlePlanSelection = (planId) => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      selectedPlan: planId,
+    }));
+    if (subscriptionErrors.selectedPlan) {
+      setSubscriptionErrors((prev) => ({
+        ...prev,
+        selectedPlan: "",
+      }));
+    }
+  };
+
+  const handleMealTypeToggle = (mealType) => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      mealTypes: prev.mealTypes.includes(mealType)
+        ? prev.mealTypes.filter((type) => type !== mealType)
+        : [...prev.mealTypes, mealType],
+    }));
+    if (subscriptionErrors.mealTypes) {
+      setSubscriptionErrors((prev) => ({
+        ...prev,
+        mealTypes: "",
+      }));
+    }
+  };
+
+  const handleDeliveryDayToggle = (day) => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      deliveryDays: prev.deliveryDays.includes(day)
+        ? prev.deliveryDays.filter((d) => d !== day)
+        : [...prev.deliveryDays, day],
+    }));
+    if (subscriptionErrors.deliveryDays) {
+      setSubscriptionErrors((prev) => ({
+        ...prev,
+        deliveryDays: "",
+      }));
+    }
+  };
+
+  const selectAllDays = () => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      deliveryDays: [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ],
+    }));
+  };
+
+  const selectWeekdays = () => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      deliveryDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    }));
+  };
+
+  const clearAllDays = () => {
+    setSubscriptionForm((prev) => ({
+      ...prev,
+      deliveryDays: [],
+    }));
+  };
+
+  const calculateWeeklyCost = () => {
+    const planPrices = {
+      diet: 30000,
+      protein: 40000,
+      royal: 60000,
+    };
+
+    const pricePerMeal = planPrices[subscriptionForm.selectedPlan] || 0;
+    const mealsPerDay = subscriptionForm.mealTypes.length;
+    const daysPerWeek = subscriptionForm.deliveryDays.length;
+    const totalWeeklyCost = pricePerMeal * mealsPerDay * daysPerWeek;
+
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    })
+      .format(totalWeeklyCost)
+      .replace("IDR", "Rp");
+  };
+
+  const validateSubscriptionForm = () => {
+    const newErrors = {};
+
+    if (!subscriptionForm.fullName.trim()) {
+      newErrors.fullName = "Full name is required";
+    }
+
+    if (!subscriptionForm.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (
+      !/^(\+62|62|0)[0-9]{9,13}$/.test(
+        subscriptionForm.phoneNumber.replace(/\s/g, "")
+      )
+    ) {
+      newErrors.phoneNumber = "Please enter a valid Indonesian phone number";
+    }
+
+    if (!subscriptionForm.selectedPlan) {
+      newErrors.selectedPlan = "Please select a meal plan";
+    }
+
+    if (subscriptionForm.mealTypes.length === 0) {
+      newErrors.mealTypes = "Please select at least one meal type";
+    }
+
+    if (subscriptionForm.deliveryDays.length === 0) {
+      newErrors.deliveryDays = "Please select at least one delivery day";
+    }
+
+    setSubscriptionErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubscriptionSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateSubscriptionForm()) {
+      return;
+    }
+
+    setIsSubscriptionSubmitting(true);
+    setSubscriptionStatus(null);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setSubscriptionStatus("success");
+      setSubscriptionForm({
+        fullName: "",
+        phoneNumber: "",
+        selectedPlan: "",
+        mealTypes: [],
+        deliveryDays: [],
+        allergies: "",
+      });
+    } catch (error) {
+      setSubscriptionStatus("error");
+    } finally {
+      setIsSubscriptionSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,169 +229,6 @@ export default function SubscriptionPage() {
 
     return () => observer.disconnect();
   }, []);
-
-  const plans = [
-    {
-      id: "basic",
-      name: "Basic Plan",
-      subtitle: "Perfect for individuals",
-      monthlyPrice: 50000,
-      yearlyPrice: 540000,
-      originalMonthlyPrice: 65000,
-      originalYearlyPrice: 720000,
-      popular: false,
-      color: "from-gray-400 to-gray-600",
-      features: [
-        { name: "5 meals per week", included: true },
-        { name: "Basic meal customization", included: true },
-        { name: "Standard delivery", included: true },
-        { name: "Email support", included: true },
-        { name: "Nutritional information", included: true },
-        { name: "Premium ingredients", included: false },
-        { name: "Priority delivery", included: false },
-        { name: "Personal nutritionist", included: false },
-        { name: "Custom meal planning", included: false },
-        { name: "24/7 phone support", included: false },
-      ],
-      highlights: [
-        "Great for beginners",
-        "Flexible scheduling",
-        "No commitment",
-      ],
-    },
-    {
-      id: "standard",
-      name: "Standard Plan",
-      subtitle: "Most popular choice",
-      monthlyPrice: 100000,
-      yearlyPrice: 1080000,
-      originalMonthlyPrice: 125000,
-      originalYearlyPrice: 1380000,
-      popular: true,
-      color: "from-blue-500 to-blue-700",
-      features: [
-        { name: "10 meals per week", included: true },
-        { name: "Advanced meal customization", included: true },
-        { name: "Priority delivery", included: true },
-        { name: "Email & chat support", included: true },
-        { name: "Detailed nutritional tracking", included: true },
-        { name: "Premium ingredients", included: true },
-        { name: "Meal variety guarantee", included: true },
-        { name: "Personal nutritionist", included: false },
-        { name: "Custom meal planning", included: false },
-        { name: "24/7 phone support", included: false },
-      ],
-      highlights: ["Best value", "Family friendly", "Premium ingredients"],
-    },
-    {
-      id: "premium",
-      name: "Premium Plan",
-      subtitle: "Ultimate experience",
-      monthlyPrice: 150000,
-      yearlyPrice: 1620000,
-      originalMonthlyPrice: 180000,
-      originalYearlyPrice: 1980000,
-      popular: false,
-      color: "from-purple-500 to-purple-700",
-      features: [
-        { name: "15 meals per week", included: true },
-        { name: "Full meal customization", included: true },
-        { name: "Same-day delivery", included: true },
-        { name: "24/7 premium support", included: true },
-        { name: "Complete nutritional analysis", included: true },
-        { name: "Organic premium ingredients", included: true },
-        { name: "Unlimited meal variety", included: true },
-        { name: "Personal nutritionist", included: true },
-        { name: "Custom meal planning", included: true },
-        { name: "VIP customer service", included: true },
-      ],
-      highlights: ["All-inclusive", "Personal nutritionist", "VIP treatment"],
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      plan: "Standard Plan",
-      rating: 5,
-      comment:
-        "The Standard Plan is perfect for my family. Great variety and excellent value!",
-      avatar: "/placeholder.svg?height=60&width=60",
-      duration: "6 months",
-    },
-    {
-      name: "Michael Chen",
-      plan: "Premium Plan",
-      rating: 5,
-      comment:
-        "The personal nutritionist feature has transformed my health journey completely.",
-      avatar: "/placeholder.svg?height=60&width=60",
-      duration: "1 year",
-    },
-    {
-      name: "Priya Sharma",
-      plan: "Basic Plan",
-      rating: 5,
-      comment:
-        "Started with Basic and loved it so much! Perfect introduction to healthy eating.",
-      avatar: "/placeholder.svg?height=60&width=60",
-      duration: "3 months",
-    },
-  ];
-
-  const faqs = [
-    {
-      question: "Can I change my plan anytime?",
-      answer:
-        "Yes! You can upgrade or downgrade your plan at any time. Changes will take effect on your next billing cycle.",
-    },
-    {
-      question: "What if I need to pause my subscription?",
-      answer:
-        "You can pause your subscription for up to 2 months per year. Just contact our support team 48 hours before your next delivery.",
-    },
-    {
-      question: "Do you accommodate dietary restrictions?",
-      answer:
-        "We cater to various dietary needs including vegetarian, vegan, gluten-free, keto, and more. Specify your preferences during signup.",
-    },
-    {
-      question: "What's your delivery coverage area?",
-      answer:
-        "We currently deliver to major cities across Indonesia including Jakarta, Surabaya, Bandung, Medan, and 20+ other cities.",
-    },
-    {
-      question: "Is there a minimum commitment period?",
-      answer:
-        "No minimum commitment required! You can cancel anytime. However, annual plans offer significant savings.",
-    },
-  ];
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    })
-      .format(price)
-      .replace("IDR", "Rp");
-  };
-
-  const getCurrentPrice = (plan) => {
-    return billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
-  };
-
-  const getOriginalPrice = (plan) => {
-    return billingCycle === "monthly"
-      ? plan.originalMonthlyPrice
-      : plan.originalYearlyPrice;
-  };
-
-  const getSavings = (plan) => {
-    const current = getCurrentPrice(plan);
-    const original = getOriginalPrice(plan);
-    return Math.round(((original - current) / original) * 100);
-  };
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -231,350 +256,404 @@ export default function SubscriptionPage() {
           </div>
         </div>
       </section>
-
-      {/* Billing Toggle */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-center">
-            <div className="bg-gray-100 p-1 rounded-full flex">
-              <button
-                onClick={() => setBillingCycle("monthly")}
-                className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
-                  billingCycle === "monthly"
-                    ? "bg-white text-blue-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle("yearly")}
-                className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 relative ${
-                  billingCycle === "yearly"
-                    ? "bg-white text-blue-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
-              >
-                Yearly
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                  Save 20%
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Plans */}
+      {/* Subscription Form Section */}
       <section
-        id="pricing"
+        id="subscription-form"
         data-animate
-        className={`py-16 transition-all duration-1000 ${
-          isVisible.pricing
+        className={`py-16 bg-white transition-all duration-1000 ${
+          isVisible["subscription-form"]
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10"
         }`}
       >
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-            {plans.map((plan, index) => (
-              <div
-                key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden ${
-                  plan.popular
-                    ? "ring-4 ring-blue-500 ring-opacity-50 scale-105"
-                    : ""
-                }`}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {/* Popular Badge */}
-                {plan.popular && (
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-center py-2 font-semibold">
-                    <Award className="w-4 h-4 inline mr-2" />
-                    Most Popular
-                  </div>
-                )}
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-6">
+                Start Your Subscription
+              </h2>
+              <p className="text-xl text-gray-600">
+                Fill out the form below to customize your meal plan and begin
+                your healthy journey
+              </p>
+            </div>
 
-                {/* Header */}
-                <div
-                  className={`bg-gradient-to-r ${plan.color} text-white p-8 ${
-                    plan.popular ? "pt-16" : ""
-                  }`}
-                >
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="opacity-90 mb-6">{plan.subtitle}</p>
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+              {subscriptionStatus === "success" && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <p className="text-green-800">
+                    Subscription submitted successfully! We'll contact you
+                    within 24 hours to confirm your plan.
+                  </p>
+                </div>
+              )}
 
-                  <div className="text-center">
-                    <div className="flex items-baseline justify-center gap-2 mb-2">
-                      <span className="text-4xl font-bold">
-                        {formatPrice(getCurrentPrice(plan))}
-                      </span>
-                      <span className="text-lg opacity-75">
-                        /{billingCycle === "monthly" ? "month" : "year"}
-                      </span>
+              {subscriptionStatus === "error" && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <p className="text-red-800">
+                    Failed to submit subscription. Please try again or contact
+                    us directly.
+                  </p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubscriptionSubmit} className="space-y-8">
+                {/* Personal Information */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Personal Information
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={subscriptionForm.fullName}
+                        onChange={handleSubscriptionInputChange}
+                        placeholder="Enter your full name"
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                          subscriptionErrors.fullName
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200"
+                        }`}
+                      />
+                      {subscriptionErrors.fullName && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {subscriptionErrors.fullName}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm line-through opacity-60">
-                        {formatPrice(getOriginalPrice(plan))}
-                      </span>
-                      <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                        Save {getSavings(plan)}%
-                      </span>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Active Phone Number{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        value={subscriptionForm.phoneNumber}
+                        onChange={handleSubscriptionInputChange}
+                        placeholder="+62 812 3456 7890"
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                          subscriptionErrors.phoneNumber
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200"
+                        }`}
+                      />
+                      {subscriptionErrors.phoneNumber && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {subscriptionErrors.phoneNumber}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-500 mt-1">
+                        We'll use this number for payment confirmations and
+                        delivery updates
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Features */}
-                <div className="p-8">
-                  <div className="space-y-4 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
+                {/* Plan Selection */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Select Your Plan <span className="text-red-500">*</span>
+                  </h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {[
+                      {
+                        id: "diet",
+                        name: "Diet Plan",
+                        price: "Rp 30.000",
+                        description: "Perfect for weight management",
+                      },
+                      {
+                        id: "protein",
+                        name: "Protein Plan",
+                        price: "Rp 40.000",
+                        description: "High protein for fitness goals",
+                      },
+                      {
+                        id: "royal",
+                        name: "Royal Plan",
+                        price: "Rp 60.000",
+                        description: "Premium ingredients & variety",
+                      },
+                    ].map((plan) => (
                       <div
-                        key={featureIndex}
-                        className="flex items-center gap-3"
+                        key={plan.id}
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-300 ${
+                          subscriptionForm.selectedPlan === plan.id
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => handlePlanSelection(plan.id)}
                       >
-                        {feature.included ? (
-                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                        ) : (
-                          <X className="w-5 h-5 text-gray-300 flex-shrink-0" />
-                        )}
-                        <span
-                          className={
-                            feature.included ? "text-gray-900" : "text-gray-400"
-                          }
-                        >
-                          {feature.name}
-                        </span>
+                        <div className="flex items-center mb-2">
+                          <div
+                            className={`w-4 h-4 rounded-full border-2 mr-3 ${
+                              subscriptionForm.selectedPlan === plan.id
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            {subscriptionForm.selectedPlan === plan.id && (
+                              <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5"></div>
+                            )}
+                          </div>
+                          <h4 className="font-semibold text-gray-900">
+                            {plan.name}
+                          </h4>
+                        </div>
+                        <p className="text-blue-600 font-bold text-lg mb-1">
+                          {plan.price}
+                        </p>
+                        <p className="text-sm text-gray-600">per meal</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {plan.description}
+                        </p>
                       </div>
                     ))}
                   </div>
-
-                  {/* Highlights */}
-                  <div className="mb-8">
-                    <div className="text-sm font-semibold text-gray-700 mb-3">
-                      Plan Highlights:
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {plan.highlights.map((highlight, hIndex) => (
-                        <span
-                          key={hIndex}
-                          className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium"
-                        >
-                          {highlight}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* CTA Button */}
-                  <button
-                    onClick={() => setSelectedPlan(plan.id)}
-                    className={`w-full py-4 rounded-full font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                      plan.popular
-                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    {selectedPlan === plan.id ? "Selected Plan" : "Choose Plan"}
-                  </button>
+                  {subscriptionErrors.selectedPlan && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {subscriptionErrors.selectedPlan}
+                    </p>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Features Comparison */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6">
-              Why Choose SEA Catering?
-            </h2>
-            <p className="text-xl text-gray-600">
-              We're committed to providing the best healthy meal experience in
-              Indonesia
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Truck className="w-8 h-8 text-blue-600" />,
-                title: "Fast Delivery",
-                description:
-                  "Same-day delivery available in major cities across Indonesia",
-              },
-              {
-                icon: <Heart className="w-8 h-8 text-blue-600" />,
-                title: "Fresh Ingredients",
-                description:
-                  "Locally sourced, organic ingredients prepared daily by expert chefs",
-              },
-              {
-                icon: <Shield className="w-8 h-8 text-blue-600" />,
-                title: "Quality Guaranteed",
-                description:
-                  "100% satisfaction guarantee or your money back, no questions asked",
-              },
-              {
-                icon: <Zap className="w-8 h-8 text-blue-600" />,
-                title: "Flexible Plans",
-                description:
-                  "Change, pause, or cancel your subscription anytime with no penalties",
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors duration-300"
-              >
-                <div className="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Customer Testimonials */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6">
-              What Our Subscribers Say
-            </h2>
-            <p className="text-xl text-gray-600">
-              Join thousands of satisfied customers who love their meal
-              subscriptions
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <div className="flex items-center mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-5 h-5 text-yellow-400 fill-current"
-                    />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-6 italic">
-                  "{testimonial.comment}"
-                </p>
-                <div className="flex items-center">
-                  <img
-                    src={testimonial.avatar || "/placeholder.svg"}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      {testimonial.name}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {testimonial.plan} • {testimonial.duration}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-6">
-                Frequently Asked Questions
-              </h2>
-              <p className="text-xl text-gray-600">
-                Got questions? We've got answers to help you make the right
-                choice
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 rounded-2xl p-6 hover:bg-gray-100 transition-colors duration-300"
-                >
-                  <h3 className="text-xl font-bold mb-3 text-gray-900">
-                    {faq.question}
+                {/* Meal Type Selection */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Meal Types <span className="text-red-500">*</span>
                   </h3>
-                  <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Select at least one meal type for your subscription
+                  </p>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    {[
+                      {
+                        id: "breakfast",
+                        name: "Breakfast",
+                        icon: "🌅",
+                        time: "7:00 - 9:00 AM",
+                      },
+                      {
+                        id: "lunch",
+                        name: "Lunch",
+                        icon: "☀️",
+                        time: "12:00 - 2:00 PM",
+                      },
+                      {
+                        id: "dinner",
+                        name: "Dinner",
+                        icon: "🌙",
+                        time: "6:00 - 8:00 PM",
+                      },
+                    ].map((meal) => (
+                      <div
+                        key={meal.id}
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-300 ${
+                          subscriptionForm.mealTypes.includes(meal.id)
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => handleMealTypeToggle(meal.id)}
+                      >
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">{meal.icon}</div>
+                          <h4 className="font-semibold text-gray-900 mb-1">
+                            {meal.name}
+                          </h4>
+                          <p className="text-sm text-gray-500">{meal.time}</p>
+                          <div className="mt-3">
+                            <div
+                              className={`w-5 h-5 rounded border-2 mx-auto ${
+                                subscriptionForm.mealTypes.includes(meal.id)
+                                  ? "border-blue-500 bg-blue-500"
+                                  : "border-gray-300"
+                              }`}
+                            >
+                              {subscriptionForm.mealTypes.includes(meal.id) && (
+                                <Check className="w-3 h-3 text-white mx-auto mt-0.5" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {subscriptionErrors.mealTypes && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {subscriptionErrors.mealTypes}
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-            Ready to Start Your Healthy Journey?
-          </h2>
-          <p className="text-xl mb-10 max-w-2xl mx-auto opacity-90">
-            Join thousands of satisfied customers who have transformed their
-            eating habits with SEA Catering
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 hover:bg-gray-100 px-10 py-4 rounded-full font-bold text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2">
-              Start Your Subscription
-              <ChevronRight className="w-5 h-5" />
-            </button>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-10 py-4 rounded-full font-bold text-lg transition-all duration-300">
-              Contact Sales Team
-            </button>
-          </div>
-        </div>
-      </section>
+                {/* Delivery Days */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Delivery Days <span className="text-red-500">*</span>
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Choose which days you'd like your meals delivered
+                  </p>
+                  <div className="grid grid-cols-7 gap-2">
+                    {[
+                      { id: "monday", name: "Mon", full: "Monday" },
+                      { id: "tuesday", name: "Tue", full: "Tuesday" },
+                      { id: "wednesday", name: "Wed", full: "Wednesday" },
+                      { id: "thursday", name: "Thu", full: "Thursday" },
+                      { id: "friday", name: "Fri", full: "Friday" },
+                      { id: "saturday", name: "Sat", full: "Saturday" },
+                      { id: "sunday", name: "Sun", full: "Sunday" },
+                    ].map((day) => (
+                      <div
+                        key={day.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all duration-300 text-center ${
+                          subscriptionForm.deliveryDays.includes(day.id)
+                            ? "border-blue-500 bg-blue-500 text-white"
+                            : "border-gray-200 hover:border-gray-300 text-gray-700"
+                        }`}
+                        onClick={() => handleDeliveryDayToggle(day.id)}
+                        title={day.full}
+                      >
+                        <div className="font-semibold text-sm">{day.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={selectAllDays}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Select All Days
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={selectWeekdays}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Weekdays Only
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={clearAllDays}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  {subscriptionErrors.deliveryDays && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {subscriptionErrors.deliveryDays}
+                    </p>
+                  )}
+                </div>
 
-      {/* Contact Section */}
-      <section className="py-16 bg-gray-900 text-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Need Help Choosing?</h2>
-              <p className="text-gray-300">
-                Our team is here to help you find the perfect plan
-              </p>
-            </div>
+                {/* Allergies */}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">
+                    Allergies & Dietary Restrictions
+                  </h3>
+                  <textarea
+                    name="allergies"
+                    value={subscriptionForm.allergies}
+                    onChange={handleSubscriptionInputChange}
+                    rows={4}
+                    placeholder="Please list any allergies, dietary restrictions, or special requirements (e.g., vegetarian, gluten-free, nut allergy, etc.)"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    This information helps us customize your meals to meet your
+                    dietary needs
+                  </p>
+                </div>
 
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                  <Phone className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Call Us</h3>
-                <p className="text-gray-300">(+62) 8123456789</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                  <Mail className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Email Us</h3>
-                <p className="text-gray-300">hello@seacatering.com</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-                  <Clock className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Support Hours</h3>
-                <p className="text-gray-300">Mon-Fri: 9AM-6PM</p>
-              </div>
+                {/* Order Summary */}
+                {(subscriptionForm.selectedPlan ||
+                  subscriptionForm.mealTypes.length > 0 ||
+                  subscriptionForm.deliveryDays.length > 0) && (
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      Order Summary
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      {subscriptionForm.selectedPlan && (
+                        <div className="flex justify-between">
+                          <span>Selected Plan:</span>
+                          <span className="font-semibold">
+                            {subscriptionForm.selectedPlan === "diet" &&
+                              "Diet Plan (Rp 30.000/meal)"}
+                            {subscriptionForm.selectedPlan === "protein" &&
+                              "Protein Plan (Rp 40.000/meal)"}
+                            {subscriptionForm.selectedPlan === "royal" &&
+                              "Royal Plan (Rp 60.000/meal)"}
+                          </span>
+                        </div>
+                      )}
+                      {subscriptionForm.mealTypes.length > 0 && (
+                        <div className="flex justify-between">
+                          <span>Meal Types:</span>
+                          <span className="font-semibold">
+                            {subscriptionForm.mealTypes
+                              .map(
+                                (type) =>
+                                  type.charAt(0).toUpperCase() + type.slice(1)
+                              )
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
+                      {subscriptionForm.deliveryDays.length > 0 && (
+                        <div className="flex justify-between">
+                          <span>Delivery Days:</span>
+                          <span className="font-semibold">
+                            {subscriptionForm.deliveryDays.length} days/week
+                          </span>
+                        </div>
+                      )}
+                      {subscriptionForm.selectedPlan &&
+                        subscriptionForm.mealTypes.length > 0 &&
+                        subscriptionForm.deliveryDays.length > 0 && (
+                          <div className="border-t pt-2 mt-3">
+                            <div className="flex justify-between text-lg font-bold text-blue-600">
+                              <span>Estimated Weekly Cost:</span>
+                              <span>{calculateWeeklyCost()}</span>
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubscriptionSubmitting}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 disabled:scale-100 flex items-center justify-center gap-2"
+                >
+                  {isSubscriptionSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Submitting Subscription...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      Submit Subscription
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
           </div>
         </div>
