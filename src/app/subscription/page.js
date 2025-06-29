@@ -135,16 +135,23 @@ export default function SubscriptionPage() {
     };
 
     const pricePerMeal = planPrices[subscriptionForm.selectedPlan] || 0;
-    const mealsPerDay = subscriptionForm.mealTypes.length;
-    const daysPerWeek = subscriptionForm.deliveryDays.length;
-    const totalWeeklyCost = pricePerMeal * mealsPerDay * daysPerWeek;
+
+    const numberOfMealTypes = subscriptionForm.mealTypes.length;
+    const numberOfDeliveryDays = subscriptionForm.deliveryDays.length;
+    const monthlyMultiplier = 4.3;
+
+    const totalMonthlyPrice =
+      pricePerMeal *
+      numberOfMealTypes *
+      numberOfDeliveryDays *
+      monthlyMultiplier;
 
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     })
-      .format(totalWeeklyCost)
+      .format(totalMonthlyPrice)
       .replace("IDR", "Rp");
   };
 
@@ -609,7 +616,8 @@ export default function SubscriptionPage() {
                                 (type) =>
                                   type.charAt(0).toUpperCase() + type.slice(1)
                               )
-                              .join(", ")}
+                              .join(", ")}{" "}
+                            ({subscriptionForm.mealTypes.length} types)
                           </span>
                         </div>
                       )}
@@ -624,14 +632,43 @@ export default function SubscriptionPage() {
                       {subscriptionForm.selectedPlan &&
                         subscriptionForm.mealTypes.length > 0 &&
                         subscriptionForm.deliveryDays.length > 0 && (
-                          <div className="border-t pt-2 mt-3">
-                            <div className="flex justify-between text-lg font-bold text-blue-600">
-                              <span>Estimated Weekly Cost:</span>
-                              <span>{calculateWeeklyCost()}</span>
+                          <>
+                            <div className="border-t pt-2 mt-3 space-y-1">
+                              <div className="flex justify-between text-sm text-gray-600">
+                                <span>Calculation:</span>
+                                <span>
+                                  Rp{" "}
+                                  {subscriptionForm.selectedPlan === "diet"
+                                    ? "30.000"
+                                    : subscriptionForm.selectedPlan ===
+                                      "protein"
+                                    ? "40.000"
+                                    : "60.000"}{" "}
+                                  × {subscriptionForm.mealTypes.length} ×{" "}
+                                  {subscriptionForm.deliveryDays.length} × 4.3
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between text-lg font-bold text-blue-600">
+                                <span>Monthly Subscription Total:</span>
+                                <span>{calculateMonthlyTotal()}</span>
+                              </div>
                             </div>
-                          </div>
+                          </>
                         )}
                     </div>
+
+                    {subscriptionForm.selectedPlan &&
+                      subscriptionForm.mealTypes.length > 0 &&
+                      subscriptionForm.deliveryDays.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            <strong>Note:</strong> This is your monthly
+                            subscription cost. The 4.3 multiplier represents the
+                            average number of weeks per month.
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
 
