@@ -272,6 +272,16 @@ export default function Home() {
               </div>
             ))}
           </div>
+          {/* View All Testimonials Button */}
+          <div className="text-center mt-12">
+            <Link
+              href="/testimonial"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105"
+            >
+              View All Testimonials
+              <ChevronRight className="w-5 h-5" />
+            </Link>
+          </div>
         </div>
       </section>
 
