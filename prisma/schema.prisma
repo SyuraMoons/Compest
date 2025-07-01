@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MealPlan {
+  id          Int    @id @default(autoincrement())
+  name        String
+  price       Int
+  description String
+  imageUrl    String
+}
+
+model Subscription {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  phoneNumber  String
+  planType     String   // e.g., 'Diet', 'Protein', 'Royal'
+  mealTypes    String[] // e.g., ["Breakfast", "Dinner"]
+  deliveryDays String[] // e.g., ["Monday", "Wednesday", "Friday"]
+  allergies    String?
+  totalPrice   Int
+  createdAt    DateTime @default(now())
+}
+
+
+model Testimonial {
+  id        Int      @id @default(autoincrement())
+  name      String
+  message   String
+  rating    Int      // Out of 5
+  createdAt DateTime @default(now())
+}
+

@@ -199,18 +199,39 @@ export default function SubscriptionPage() {
     setSubscriptionStatus(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setSubscriptionStatus("success");
-      setSubscriptionForm({
-        fullName: "",
-        phoneNumber: "",
-        selectedPlan: "",
-        mealTypes: [],
-        deliveryDays: [],
-        allergies: "",
+      const response = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: subscriptionForm.fullName,
+          phoneNumber: subscriptionForm.phoneNumber,
+          planName:
+            subscriptionForm.selectedPlan === "diet"
+              ? "Diet Plan"
+              : subscriptionForm.selectedPlan === "protein"
+              ? "Protein Plan"
+              : subscriptionForm.selectedPlan === "royal"
+              ? "Royal Plan"
+              : "",
+          mealTypes: subscriptionForm.mealTypes,
+          deliveryDays: subscriptionForm.deliveryDays,
+          allergies: subscriptionForm.allergies,
+        }),
       });
+
+      if (response.ok) {
+        setSubscriptionStatus("success");
+        setSubscriptionForm({
+          fullName: "",
+          phoneNumber: "",
+          selectedPlan: "",
+          mealTypes: [],
+          deliveryDays: [],
+          allergies: "",
+        });
+      } else {
+        setSubscriptionStatus("error");
+      }
     } catch (error) {
       setSubscriptionStatus("error");
     } finally {
@@ -651,7 +672,7 @@ export default function SubscriptionPage() {
 
                               <div className="flex justify-between text-lg font-bold text-blue-600">
                                 <span>Monthly Subscription Total:</span>
-                                <span>{calculateMonthlyTotal()}</span>
+                                <span>{calculateWeeklyCost()}</span>
                               </div>
                             </div>
                           </>

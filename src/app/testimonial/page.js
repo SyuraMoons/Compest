@@ -179,7 +179,6 @@ export default function TestimonialPage() {
       }));
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -191,23 +190,35 @@ export default function TestimonialPage() {
     setSubmitStatus(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setSubmitStatus("success");
-      setFormData({
-        name: "",
-        email: "",
-        message: "",
-        rating: 0,
+      const response = await fetch("/api/testimonial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          rating: formData.rating,
+          // You can include email if you want to store it
+        }),
       });
+
+      if (response.ok) {
+        setSubmitStatus("success");
+        setFormData({
+          name: "",
+          email: "",
+          message: "",
+          rating: 0,
+        });
+      } else {
+        setSubmitStatus("error");
+      }
     } catch (error) {
       setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
     }
   };
-
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % testimonials.length);
   };

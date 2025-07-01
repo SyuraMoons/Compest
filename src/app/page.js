@@ -1,6 +1,7 @@
 "use client";
 import Navbar from "./components/navbar";
 import Link from "next/link";
+
 import { useState, useEffect } from "react";
 import {
   ChevronRight,
@@ -17,6 +18,14 @@ import {
 export default function Home() {
   const [navOpen, setNavOpen] = useState(false);
   const [isVisible, setIsVisible] = useState({});
+
+  useEffect(() => {
+    fetch("/api/testimonial")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data); // ✅ data from DB via API
+      });
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
